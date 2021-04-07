@@ -47,7 +47,7 @@ class Hoteis(Resource):
         cursor = connection.cursor()
 
         dados = path_params.parse_args()
-        dados_validos = {chave: dados[chave] for chave in dados 
+        dados_validos = {chave: dados[chave] for chave in dados
                          if dados[chave] is not None}
         parametros = mormalize_path_params(**dados_validos)
 

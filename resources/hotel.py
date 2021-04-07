@@ -49,32 +49,33 @@ class Hoteis(Resource):
         dados = path_params.parse_args()
         dados_validos = {chave: dados[chave] for chave in dados
                          if dados[chave] is not None}
-        parametros = mormalize_path_params(**dados_validos)
+        parametros = normalize_path_params(**dados_validos)
 
-        if parametros.get('cidade'):
-            consulta = "SELECT * FROM hoteis\
-            WHERE (estrelas > ? and estrelas < ?)\
-            and (diaria > ? and diaria > ?)\
+        if not parametros.get('cidade'):
+            consulta = "SELECT * FROM hoteis \
+            WHERE (estrelas >= ? and estrelas <= ?) \
+            and (diaria >= ? and diaria <= ?) \
             LIMIT ? OFFSET ?"
-            tupla = tupla([parametros[chave] for chave in parametros])
+            tupla = tuple([parametros[chave] for chave in parametros])
             resultado = cursor.execute(consulta, tupla)
         else:
-            consulta = "SELECT * FROM hoteis\
-            WHERE (estrelas > ? and estrelas < ?)\
-            and (diaria > ? and diaria > ?)\
+            consulta = "SELECT * FROM hoteis \
+            WHERE (estrelas >= ? and estrelas <= ?) \
+            and (diaria >= ? and diaria <= ?) \
             and cidade = ? LIMIT ? OFFSET ?"
-            tupla = tupla([parametros[chave] for chave in parametros])
+            tupla = tuple([parametros[chave] for chave in parametros])
             resultado = cursor.execute(consulta, tupla)
 
-            hoteis = []
-            for linha in resultado:
-                hoteis.append({
-                    'hotel_id': linha[0],
-                    'nome': linha[1],
-                    'estrelas': linha[2],
-                    'diaria': linha[3],
-                    'cidade': linha[4]
-                })
+        hoteis = []
+
+        for linha in resultado:
+            hoteis.append({
+            'hotel_id': linha[0],
+            'nome': linha[1],
+            'estrelas': linha[2],
+            'diaria': linha[3],
+            'cidade': linha[4]
+            })
 
         return{'hoteis': hoteis}
 
@@ -95,7 +96,8 @@ class Hotel(Resource):
     @jwt_required()
     def post(self, hotel_id):
         if HotelModel.find_hotel(hotel_id):
-            return {"message": "Hotel id already exists."}, 400
+            return {"message": "Hotel id '{}' already\
+        exists.".format(hotel_id)}, 400
 
         dados = Hotel.argumentos.parse_args()
         hotel = HotelModel(hotel_id, **dados)

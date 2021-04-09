@@ -1,33 +1,9 @@
 from flask import Flask
 from flask_restful import Resource, reqparse
 from models.hotel import HotelModel
+from resources.filtros import normalize_path_params, consulta_com_cidade, consulta_sem_cidade
 from flask_jwt_extended import jwt_required
 import sqlite3
-
-
-def normalize_path_params(cidade=None,
-                          estrelas_min=0,
-                          estrelas_max=5,
-                          diaria_min=0,
-                          diaria_max=10000,
-                          limit=50,
-                          offset=0, **dados):
-    if cidade:
-        return {
-            'estrelas_min': estrelas_min,
-            'estrelas_max': estrelas_max,
-            'diaria_min': diaria_min,
-            'diaria_max': diaria_max,
-            'cidade': cidade,
-            'limit': limit,
-            'offset': offset}
-    return {
-        'estrelas_min': estrelas_min,
-        'estrelas_max': estrelas_max,
-        'diaria_min': diaria_min,
-        'diaria_max': diaria_max,
-        'limit': limit,
-        'offset': offset}
 
 
 path_params = reqparse.RequestParser()
@@ -49,32 +25,25 @@ class Hoteis(Resource):
         dados = path_params.parse_args()
         dados_validos = {chave: dados[chave] for chave in dados
                          if dados[chave] is not None}
-        parametros = mormalize_path_params(**dados_validos)
+        parametros = normalize_path_params(**dados_validos)
 
-        if parametros.get('cidade'):
-            consulta = "SELECT * FROM hoteis\
-            WHERE (estrelas > ? and estrelas < ?)\
-            and (diaria > ? and diaria > ?)\
-            LIMIT ? OFFSET ?"
-            tupla = tupla([parametros[chave] for chave in parametros])
-            resultado = cursor.execute(consulta, tupla)
+        if not parametros.get('cidade'):
+            tupla = tuple([parametros[chave] for chave in parametros])
+            resultado = cursor.execute(consulta_sem_cidade, tupla)
         else:
-            consulta = "SELECT * FROM hoteis\
-            WHERE (estrelas > ? and estrelas < ?)\
-            and (diaria > ? and diaria > ?)\
-            and cidade = ? LIMIT ? OFFSET ?"
-            tupla = tupla([parametros[chave] for chave in parametros])
-            resultado = cursor.execute(consulta, tupla)
+            tupla = tuple([parametros[chave] for chave in parametros])
+            resultado = cursor.execute(consulta_com_cidade, tupla)
 
-            hoteis = []
-            for linha in resultado:
-                hoteis.append({
-                    'hotel_id': linha[0],
-                    'nome': linha[1],
-                    'estrelas': linha[2],
-                    'diaria': linha[3],
-                    'cidade': linha[4]
-                })
+        hoteis = []
+
+        for linha in resultado:
+            hoteis.append({
+            'hotel_id': linha[0],
+            'nome': linha[1],
+            'estrelas': linha[2],
+            'diaria': linha[3],
+            'cidade': linha[4]
+            })
 
         return{'hoteis': hoteis}
 
@@ -95,7 +64,8 @@ class Hotel(Resource):
     @jwt_required()
     def post(self, hotel_id):
         if HotelModel.find_hotel(hotel_id):
-            return {"message": "Hotel id already exists."}, 400
+            return {"message": "Hotel id '{}' already\
+        exists.".format(hotel_id)}, 400
 
         dados = Hotel.argumentos.parse_args()
         hotel = HotelModel(hotel_id, **dados)

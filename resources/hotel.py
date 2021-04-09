@@ -1,6 +1,7 @@
 from flask import Flask
 from flask_restful import Resource, reqparse
 from models.hotel import HotelModel
+from resources.filtros import normalize_path_params, consulta_com_cidade, consulta_sem_cidade
 from flask_jwt_extended import jwt_required
 import sqlite3
 
@@ -27,13 +28,11 @@ class Hoteis(Resource):
         parametros = normalize_path_params(**dados_validos)
 
         if not parametros.get('cidade'):
-            consulta = consulta_sem_cidade
             tupla = tuple([parametros[chave] for chave in parametros])
-            resultado = cursor.execute(consulta, tupla)
+            resultado = cursor.execute(consulta_sem_cidade, tupla)
         else:
-            consulta = consulta_com_cidade
             tupla = tuple([parametros[chave] for chave in parametros])
-            resultado = cursor.execute(consulta, tupla)
+            resultado = cursor.execute(consulta_com_cidade, tupla)
 
         hoteis = []
 

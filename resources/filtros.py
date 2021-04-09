@@ -1,4 +1,3 @@
-
 def normalize_path_params(cidade=None,
                           estrelas_min=0,
                           estrelas_max=5,
